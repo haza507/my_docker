@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "tu_password_segura"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "postgres"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - supabase_net
+
+  gotrue:
+    image: supabase/gotrue:latest
+    restart: always
+    environment:
+      GOTRUE_DB_DRIVER: "postgres"
+      GOTRUE_DB_DATABASE_URL: "postgresql://postgres:tu_password_segura@postgres:5432/postgres"
+      GOTRUE_SITE_URL: "https://tu-dominio.com"
+      GOTRUE_JWT_SECRET: "clave_jwt_segura_y_larga"
+      GOTRUE_LOG_LEVEL: "info"
+    depends_on:
+      - postgres
+    networks:
+      - supabase_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gotrue.rule=Host(`auth.tu-dominio.com`)"
+      - "traefik.http.routers.gotrue.entrypoints=websecure"
+      - "traefik.http.routers.gotrue.tls.certresolver=myresolver"
+      - "traefik.http.services.gotrue.loadbalancer.server.port=9999"
+
+  postgrest:
+    image: supabase/postgrest:latest
+    restart: always
+    environment:
+      PGRST_DB_URI: "postgresql://postgres:tu_password_segura@postgres:5432/postgres"
+      PGRST_DB_SCHEMA: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "clave_jwt_segura_y_larga"
+      PGRST_SERVER_PORT: "3000"
+    depends_on:
+      - postgres
+    networks:
+      - supabase_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.postgrest.rule=Host(`api.tu-dominio.com`)"
+      - "traefik.http.routers.postgrest.entrypoints=websecure"
+      - "traefik.http.routers.postgrest.tls.certresolver=myresolver"
+      - "traefik.http.services.postgrest.loadbalancer.server.port=3000"
+
+  realtime:
+    image: supabase/realtime:latest
+    restart: always
+    environment:
+      DB_HOST: "postgres"
+      DB_NAME: "postgres"
+      DB_USER: "postgres"
+      DB_PASSWORD: "tu_password_segura"
+      PORT: 4000
+      JWT_SECRET: "clave_jwt_segura_y_larga"
+    depends_on:
+      - postgres
+    networks:
+      - supabase_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.realtime.rule=Host(`realtime.tu-dominio.com`)"
+      - "traefik.http.routers.realtime.entrypoints=websecure"
+      - "traefik.http.routers.realtime.tls.certresolver=myresolver"
+      - "traefik.http.services.realtime.loadbalancer.server.port=4000"
+
+  storage:
+    image: supabase/storage-api:latest
+    restart: always
+    environment:
+      ANON_KEY: "clave_jwt_segura_y_larga"
+      SERVICE_KEY: "clave_jwt_segura_y_larga"
+      POSTGREST_URL: "http://postgrest:3000"
+      DATABASE_URL: "postgresql://postgres:tu_password_segura@postgres:5432/postgres"
+      FILE_SIZE_LIMIT: 52428800 # 50 MB
+    depends_on:
+      - postgres
+      - postgrest
+    networks:
+      - supabase_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storage.rule=Host(`storage.tu-dominio.com`)"
+      - "traefik.http.routers.storage.entrypoints=websecure"
+      - "traefik.http.routers.storage.tls.certresolver=myresolver"
+      - "traefik.http.services.storage.loadbalancer.server.port=8080"
+
+  studio:
+    image: supabase/studio:latest
+    restart: always
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: "https://api.tu-dominio.com"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "clave_jwt_segura_y_larga"
+    depends_on:
+      - postgrest
+      - gotrue
+      - realtime
+      - storage
+    networks:
+      - supabase_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.studio.rule=Host(`studio.tu-dominio.com`)"
+      - "traefik.http.routers.studio.entrypoints=websecure"
+      - "traefik.http.routers.studio.tls.certresolver=myresolver"
+      - "traefik.http.services.studio.loadbalancer.server.port=3000"
+
+volumes:
+  pgdata:
+
+networks:
+  supabase_net:
+    driver: bridge
