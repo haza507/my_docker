@@ -1,43 +1,24 @@
-version: "3.8"
-
 services:
   wg-easy:
-    image: weejewel/wg-easy
     container_name: wg-easy
+    image: weejewel/wg-easy
     restart: unless-stopped
-
-    # Usa red host para exponer correctamente el puerto UDP de WireGuard
-    network_mode: "host"
-    #ports:
-    #  - "51824:51820/udp"
-    #  - "51821:51821/tcp"
-
-    environment:
-      # Cambia esto por tu IP pública o dominio (si tienes uno)
-      - WG_HOST=192.168.0.149
-
-      # Contraseña para acceder a la interfaz web
-      - PASSWORD=admin123
-
-      # Dirección IP que se asignará a los clientes
-      - WG_DEFAULT_ADDRESS=10.8.0.2
-
-
-      # Servidor DNS que usarán los clientes
-      - WG_DEFAULT_DNS=8.8.8.8
-
-      # Puerto UDP para WireGuard (por defecto: 51820)
-      - WG_PORT=51820
-
-    volumes:
-      - ./wg-easy-data:/etc/wireguard
-
-    # Requiere capacidades adicionales para configurar la red
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-
-    # Habilita reenvío de paquetes
+    environment:
+      - WG_HOST=200.124.16.134
+      - PASSWORD=javila@1234  # Cambia esto por seguridad
+      - WG_PORT=51820
+      - WG_DEFAULT_ADDRESS=10.8.0.2
+      - WG_DEFAULT_DNS=8.8.8.8
+      - LANG=es
+    ports:
+      - "51820:51820/udp"  # Puerto WireGuard
+      - "52821:51821/tcp"  # Interfaz web
+    volumes:
+      - ./config:/etc/wireguard
     sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv6.conf.all.forwarding=1
+      - net.ipv4.conf.all.src_valid_mark=1
+#windows
+#Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "IPEnableRouter" -Value 1
