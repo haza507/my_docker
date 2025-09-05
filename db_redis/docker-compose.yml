@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+
+    db-auth:
+        image: postgres:15.5-alpine3.18
+        restart: always
+        volumes:
+            - postgres_data_auth:/var/lib/postgresql/data/
+        # expose:
+        #     - 54432
+        ports:
+             - 5432:5432
+        # ports:
+        #     - 5432       
+        environment:
+            - POSTGRES_USER=juanz
+            - POSTGRES_PASSWORD=Ch1r1qu1789*
+            - POSTGRES_DB=auth
+
+ 
+    cache:
+        container_name: redis_usuarios
+        hostname: redis_usuarios_cache
+        image: redis/redis-stack-server
+        restart: always
+        ports:
+              - '6379:6379'
+        # ports:
+        #     - 6379
+        command: redis-stack-server --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+        volumes:
+            - redis_data:/data:rw
+volumes:
+  redis_data:
+  postgres_data_auth:
+
+
+networks:
+  default:
+    external:
+      name: "frontend"
