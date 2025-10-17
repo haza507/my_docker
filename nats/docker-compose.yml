@@ -6,17 +6,27 @@ services:
         image: nats:2.10-alpine
         restart: always
         ports:
-            - '4222:4222'
-            - '8222:8222'
-            - '6222:6222'
+            - '4222:4222'  # Puerto cliente NATS
+        expose:
+            - "8222"       # Puerto web solo expuesto internamente para Traefik
         command: [
             "--auth", "nats_token_123",
             "--http_port", "8222",
-            "--port", "4222",
-            "--cluster", "nats://0.0.0.0:6222"
+            "--port", "4222"
         ]
         volumes:
             - nats_data:/data
+        labels:
+            - "traefik.enable=true"
+            # Interfaz web de monitoreo NATS
+            - "traefik.http.routers.nats-monitor.rule=Host(`nats.localhost`) || Host(`nats.azasoft.xyz`)"
+            - "traefik.http.routers.nats-monitor.entrypoints=websecure"
+            - "traefik.http.routers.nats-monitor.tls.certresolver=letsencrypt"
+            - "traefik.http.services.nats-monitor.loadbalancer.server.port=8222"
+            # Redirección HTTP a HTTPS
+            - "traefik.http.routers.nats-monitor-http.rule=Host(`nats.localhost`) || Host(`nats.azasoft.xyz`)"
+            - "traefik.http.routers.nats-monitor-http.entrypoints=web"
+            - "traefik.http.routers.nats-monitor-http.middlewares=redirect-to-https"
 
 volumes:
   nats_data:
