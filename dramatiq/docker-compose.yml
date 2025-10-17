@@ -1,0 +1,39 @@
+services:
+
+    cache:
+        container_name: redis_usuarios
+        hostname: redis_usuarios_cache
+        image: redis/redis-stack-server
+        restart: always
+        ports:
+              - '6379:6379'
+        # ports:
+        #     - 6379
+        command: redis-stack-server --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+        volumes:
+            - redis_data:/data:rw
+
+    dramatiq:
+        container_name: dramatiq_worker
+        hostname: dramatiq_tasks
+        image: python:3.11-slim
+        restart: always
+        depends_on:
+            - cache
+        environment:
+            - REDIS_URL=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@redis_usuarios:6379/0
+        command: >
+            sh -c "pip install dramatiq[redis] &&
+                   echo 'Dramatiq worker ready. Add your tasks here.' &&
+                   tail -f /dev/null"
+        volumes:
+            - ./dramatiq_tasks:/app
+        working_dir: /app
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    name: "web"
+    external: true

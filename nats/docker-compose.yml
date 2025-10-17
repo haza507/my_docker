@@ -1,0 +1,27 @@
+services:
+
+    nats:
+        container_name: nats_server
+        hostname: nats_messaging
+        image: nats:2.10-alpine
+        restart: always
+        ports:
+            - '4222:4222'
+            - '8222:8222'
+            - '6222:6222'
+        command: [
+            "--auth", "nats_token_123",
+            "--http_port", "8222",
+            "--port", "4222",
+            "--cluster", "nats://0.0.0.0:6222"
+        ]
+        volumes:
+            - nats_data:/data
+
+volumes:
+  nats_data:
+
+networks:
+  default:
+    name: "web"
+    external: true
